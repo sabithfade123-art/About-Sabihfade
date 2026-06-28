@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Snake Game</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Poppins,sans-serif;
+}
+
+body{
+background:#050505;
+color:white;
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+height:100vh;
+overflow:hidden;
+}
+
+body::before{
+content:"";
+position:fixed;
+width:500px;
+height:500px;
+background:#00ff88;
+filter:blur(180px);
+opacity:.12;
+top:-200px;
+left:-200px;
+z-index:-1;
+}
+
+body::after{
+content:"";
+position:fixed;
+width:500px;
+height:500px;
+background:#00d4ff;
+filter:blur(180px);
+opacity:.10;
+bottom:-200px;
+right:-200px;
+z-index:-1;
+}
+
+h1{
+font-size:3rem;
+margin-bottom:10px;
+background:linear-gradient(90deg,#00ff88,#00d4ff);
+-webkit-background-clip:text;
+-webkit-text-fill-color:transparent;
+}
+
+.stats{
+display:flex;
+gap:20px;
+margin-bottom:15px;
+font-size:20px;
+}
+
+canvas{
+background:black;
+border:2px solid rgba(255,255,255,.15);
+border-radius:20px;
+box-shadow:0 0 25px rgba(0,255,136,.2);
+}
+
+.controls{
+margin-top:20px;
+display:grid;
+grid-template-columns:80px 80px 80px;
+gap:10px;
+}
+
+.controls button{
+background:rgba(255,255,255,.08);
+border:none;
+color:white;
+font-size:22px;
+padding:15px;
+border-radius:15px;
+}
+
+.controls button:active{
+transform:scale(.95);
+}
+
+.gameover{
+position:fixed;
+display:none;
+background:rgba(0,0,0,.95);
+padding:30px;
+border-radius:20px;
+text-align:center;
+border:1px solid rgba(255,255,255,.15);
+}
+
+.restart{
+margin-top:15px;
+padding:12px 25px;
+background:#00ff88;
+border:none;
+border-radius:12px;
+font-weight:bold;
+font-size:16px;
+}
+
+</style>
+</head>
+<body>
+
+<h1>🐍 SNAKE GAME</h1>
+
+<div class="stats">
+<div>Score: <span id="score">0</span></div>
+<div>High Score: <span id="highscore">0</span></div>
+</div>
+
+<canvas id="game" width="400" height="400"></canvas>
+
+<div class="controls">
+<div></div>
+<button onclick="changeDir('UP')">⬆️</button>
+<div></div>
+
+<button onclick="changeDir('LEFT')">⬅️</button>
+<button onclick="changeDir('DOWN')">⬇️</button>
+<button onclick="changeDir('RIGHT')">➡️</button>
+</div>
+
+<div class="gameover" id="gameover">
+<h2>💀 GAME OVER</h2>
+<p style="margin-top:10px;">
+Final Score:
+<span id="finalscore">0</span>
+</p>
+
+<button class="restart" onclick="location.reload()">
+PLAY AGAIN
+</button>
+</div>
+
+<script>
+
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+
+const box=20;
+
+let snake=[
+{x:10*box,y:10*box}
+];
+
+let direction="RIGHT";
+
+let food={
+x:Math.floor(Math.random()*20)*box,
+y:Math.floor(Math.random()*20)*box
+};
+
+let score=0;
+
+let highscore=localStorage.getItem("snakeHigh") || 0;
+
+document.getElementById("highscore").innerText=highscore;
+
+function collision(head,array){
+
+for(let i=0;i<array.length;i++){
+
+if(
+head.x===array[i].x &&
+head.y===array[i].y
+){
+return true;
+}
+
+}
+
+return false;
+
+}
+
+document.addEventListener("keydown",e=>{
+
+if(e.key==="ArrowUp" && direction!=="DOWN")
+direction="UP";
+
+if(e.key==="ArrowDown" && direction!=="UP")
+direction="DOWN";
+
+if(e.key==="ArrowLeft" && direction!=="RIGHT")
+direction="LEFT";
+
+if(e.key==="ArrowRight" && direction!=="LEFT")
+direction="RIGHT";
+
+});
+
+function changeDir(dir){
+
+if(dir==="UP" && direction!=="DOWN")
+direction="UP";
+
+if(dir==="DOWN" && direction!=="UP")
+direction="DOWN";
+
+if(dir==="LEFT" && direction!=="RIGHT")
+direction="LEFT";
+
+if(dir==="RIGHT" && direction!=="LEFT")
+direction="RIGHT";
+
+}
+
+function gameOver(){
+
+clearInterval(game);
+
+document.getElementById("finalscore").innerText=score;
+
+document.getElementById("gameover").style.display="block";
+
+}
+
+function draw(){
+
+ctx.fillStyle="#000";
+ctx.fillRect(0,0,400,400);
+
+for(let i=0;i<snake.length;i++){
+
+ctx.fillStyle=i===0 ? "#00ff88" : "#00d4ff";
+
+ctx.fillRect(
+snake[i].x,
+snake[i].y,
+18,
+18
+);
+
+}
+
+ctx.beginPath();
+ctx.fillStyle="#ff4444";
+ctx.arc(food.x+10,food.y+10,8,0,Math.PI*2);
+ctx.fill();
+
+let snakeX=snake[0].x;
+let snakeY=snake[0].y;
+
+if(direction==="LEFT") snakeX-=box;
+if(direction==="RIGHT") snakeX+=box;
+if(direction==="UP") snakeY-=box;
+if(direction==="DOWN") snakeY+=box;
+
+if(
+snakeX<0 ||
+snakeY<0 ||
+snakeX>=400 ||
+snakeY>=400
+){
+gameOver();
+return;
+}
+
+if(
+collision(
+{x:snakeX,y:snakeY},
+snake
+)
+){
+gameOver();
+return;
+}
+
+if(
+snakeX===food.x &&
+snakeY===food.y
+){
+
+score++;
+
+document.getElementById("score").innerText=score;
+
+if(score>highscore){
+
+highscore=score;
+
+localStorage.setItem(
+"snakeHigh",
+highscore
+);
+
+document.getElementById(
+"highscore"
+).innerText=highscore;
+
+}
+
+food={
+x:Math.floor(Math.random()*20)*box,
+y:Math.floor(Math.random()*20)*box
+};
+
+}else{
+
+snake.pop();
+
+}
+
+const newHead={
+x:snakeX,
+y:snakeY
+};
+
+snake.unshift(newHead);
+
+}
+
+let game=setInterval(draw,120);
+
+</script>
+
+</body>
+</html>
